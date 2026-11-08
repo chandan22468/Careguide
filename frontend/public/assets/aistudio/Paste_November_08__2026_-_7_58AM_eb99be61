@@ -1,0 +1,1902 @@
+# MASTER FRONTEND DEVELOPMENT PROMPT: CAREGUIDE
+
+## 1. YOUR ROLE
+
+Act as a Senior Frontend Architect, Senior React Developer, UI/UX Designer, and Product Engineer.
+
+Your task is to build a complete, production-quality frontend for **CareGuide**, an AI-powered personal care management platform designed for customers of Man Matters.
+
+Do not create a basic demo, static website, or generic admin dashboard.
+
+Build a fully functional customer-facing web application with:
+- Complete navigation and page routing.
+- Fully interactive UI components.
+- Backend API integration.
+- Persistent user demo sessions without authentication.
+- AI-powered chat interface connected to the backend Gemini integration.
+- Product discovery and product management.
+- Personal care routines.
+- Progress tracking and journal.
+- Order lookup and customer support.
+- Responsive layouts.
+- Proper loading, error, success, and empty states.
+
+You must write actual working code, not pseudocode or placeholder descriptions.
+
+Think like an engineer building a real consumer product that will be demonstrated to evaluators.
+
+---
+
+# 2. PRODUCT OVERVIEW
+
+## Product name: CareGuide
+
+**Tagline:** Your personal care journey, all in one place.
+
+CareGuide is a centralised personal care management platform that helps customers discover, understand, manage, and track their personal care products and routines.
+
+It should not be limited to hair or beard tracking.
+
+The platform should support multiple care categories:
+
+1. Hair Care
+2. Beard Care
+3. Skin Care
+4. General Wellness
+5. Other Personal Care
+
+### Core problems the application aims to address
+
+- Customers may find it difficult to manage multiple personal care products.
+- Customers may not know how to organise their product routines.
+- Customers may have questions about product ingredients and instructions.
+- Customers may want to record their personal care journey.
+- Customers may want a central place to manage products, routines, and support.
+- Customers may need help understanding which product information is relevant to their concerns.
+
+Treat these as product hypotheses, not proven customer findings.
+
+### Main user journey
+
+1. User opens CareGuide.
+2. User completes a lightweight onboarding experience.
+3. User selects personal care categories and goals.
+4. User explores the Man Matters product catalogue.
+5. User adds products to My Care.
+6. User manages routines and activities.
+7. User records observations in the Progress Journal.
+8. User asks questions to CareGuide AI.
+9. User checks demo order information or raises a support request.
+10. User views a personalised dashboard.
+
+---
+
+# 3. MANDATORY TECHNOLOGY STACK
+
+Use exactly the following stack unless a dependency is genuinely incompatible.
+
+### Core frontend
+- React
+- Vite
+- TypeScript
+- React Router DOM
+
+### Styling and UI
+- Tailwind CSS
+- shadcn/ui
+- Lucide React icons
+- Framer Motion for subtle animations
+
+### State and API management
+- TanStack Query
+- Axios
+- React Context API for global session state
+
+### Forms and validation
+- React Hook Form
+- Zod
+- @hookform/resolvers
+
+### Charts and visualisation
+- Recharts
+
+### Date handling
+- date-fns
+
+### Notifications
+- Sonner or shadcn/ui toast system
+
+### Image handling
+- Cloudinary-hosted image URLs returned by the backend.
+
+Do not install unnecessary libraries.
+
+Use TypeScript throughout the entire project. Avoid `any` wherever possible.
+
+---
+
+# 4. BACKEND INTEGRATION CONTRACT
+
+The backend is a separate Python FastAPI application.
+
+The frontend must NOT implement database operations directly.
+
+The frontend must NOT connect directly to MongoDB.
+
+The frontend must NOT call Gemini directly.
+
+All requests must go through the FastAPI backend.
+
+### API base URL
+
+Read the base URL from:
+
+`VITE_API_BASE_URL`
+
+Example frontend `.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+Create a central API client:
+
+`src/services/api.ts`
+
+Configure Axios with:
+- Base URL from environment variables.
+- JSON content type.
+- Request and response handling.
+- Centralised error handling.
+- Appropriate timeout.
+- Consistent error messages.
+
+Create separate service files:
+
+```text
+src/services/
+    api.ts
+    sessionService.ts
+    productService.ts
+    myCareService.ts
+    routineService.ts
+    progressService.ts
+    aiService.ts
+    orderService.ts
+    supportService.ts
+    dashboardService.ts
+    uploadService.ts
+```
+
+Each service should contain typed functions for the corresponding backend endpoints.
+
+Do not put all API requests inside React components.
+
+### Expected backend API endpoints
+
+Use the following API contracts.
+
+#### Session
+- POST `/session`
+- GET `/session/{sessionId}`
+- PUT `/session/{sessionId}`
+- DELETE `/session/{sessionId}`
+
+#### Products
+- GET `/products`
+- GET `/products/{id}`
+- GET `/products/compare?ids=id1,id2`
+
+#### My Care Products
+- GET `/my-products?sessionId={sessionId}`
+- POST `/my-products`
+- PATCH `/my-products/{id}`
+- DELETE `/my-products/{id}`
+
+#### Routines
+- GET `/routines?sessionId={sessionId}`
+- POST `/routines`
+- PATCH `/routines/{id}`
+- DELETE `/routines/{id}`
+- GET `/routines/summary?sessionId={sessionId}`
+
+#### Progress Journal
+- GET `/progress?sessionId={sessionId}`
+- POST `/progress`
+- GET `/progress/{id}`
+- PUT `/progress/{id}`
+- DELETE `/progress/{id}`
+
+#### AI Assistant
+- POST `/ai/chat`
+- GET `/ai/history?sessionId={sessionId}`
+- DELETE `/ai/history?sessionId={sessionId}`
+- GET `/ai/suggestions`
+
+#### Image uploads
+- POST `/uploads/signature`
+- POST `/uploads/delete`
+
+#### Orders
+- GET `/orders/{order_id}`
+
+#### Customer Support
+- POST `/support/tickets`
+- GET `/support/tickets?sessionId={sessionId}`
+- GET `/faqs`
+
+#### Dashboard
+- GET `/dashboard?sessionId={sessionId}`
+- GET `/dashboard/analytics?sessionId={sessionId}`
+
+Important:
+The backend is being developed independently. If an endpoint is temporarily unavailable, create a clean API integration layer and display a proper unavailable/error state.
+
+Do not silently replace failed API calls with fake data.
+
+---
+
+# 5. DEMO SESSION MANAGEMENT
+
+Authentication and authorization are intentionally excluded from this prototype.
+
+Do not build:
+- Login page.
+- Registration page.
+- Password system.
+- JWT authentication.
+- OAuth.
+- Protected routes requiring authentication.
+
+Instead, implement a persistent demo session.
+
+### Session creation
+
+When a visitor opens the application:
+
+1. Check whether `careguide_session_id` exists in localStorage.
+2. If it exists, call GET `/session/{sessionId}`.
+3. If it does not exist, generate a UUID.
+4. Call POST `/session` with the new session ID.
+5. Save the session ID in localStorage.
+6. Store the session information in React Context.
+7. Load the application.
+
+Example:
+
+```typescript
+const SESSION_KEY = "careguide_session_id";
+
+function getOrCreateSessionId() {
+  let sessionId = localStorage.getItem(SESSION_KEY);
+
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem(SESSION_KEY, sessionId);
+  }
+
+  return sessionId;
+}
+```
+
+Adapt the example to the actual backend response contract.
+
+### Global session context
+
+Create:
+
+`src/context/SessionContext.tsx`
+
+It should provide:
+- sessionId
+- session information
+- selected categories
+- selected concerns
+- selected goals
+- loading state
+- session update function
+- reset demo function
+
+All relevant pages must use the same session ID.
+
+### Reset Demo
+
+Add a Reset Demo option in the profile/settings area.
+
+When clicked:
+1. Show a confirmation dialog.
+2. Call DELETE `/session/{sessionId}`.
+3. Clear local session data.
+4. Generate a new session.
+5. Redirect to onboarding or dashboard.
+
+If the backend reset fails, do not pretend that the data was deleted.
+
+Remember: a session ID is only a demo identifier, not a security mechanism.
+
+---
+
+# 6. APPLICATION DESIGN SYSTEM
+
+Create a premium, modern consumer wellness experience.
+
+The website should feel like a polished personal care product, not an enterprise admin panel.
+
+### Visual direction
+
+Use:
+- Clean off-white backgrounds.
+- White surfaces.
+- Dark charcoal or navy typography.
+- Subtle green accent colour.
+- Soft neutral borders.
+- Rounded cards.
+- Generous whitespace.
+- Carefully balanced typography.
+- Subtle shadows.
+- Minimal gradients.
+- High-quality product imagery.
+
+Suggested palette:
+
+```text
+Primary:       #183C32
+Primary light: #E7F1EB
+Background:    #F8F9F6
+Surface:       #FFFFFF
+Text:          #17211D
+Muted:         #75817A
+Border:        #E7EBE7
+Success:       #26845B
+Warning:       #D99B35
+Danger:        #D9534F
+```
+
+You may refine these colours for better visual consistency.
+
+### Design rules
+
+1. Avoid excessive gradients.
+2. Avoid oversized dashboard cards.
+3. Avoid unnecessary decorative elements.
+4. Use consistent spacing.
+5. Maintain visual hierarchy.
+6. Use consistent border radius.
+7. Use Lucide icons.
+8. Keep animations subtle.
+9. Use skeleton loaders.
+10. Make every page responsive.
+
+### Responsive behaviour
+
+Desktop:
+- Sidebar navigation.
+- Main content area.
+- Optional contextual right panel where useful.
+
+Tablet:
+- Collapsible sidebar.
+- Adapted grid layouts.
+
+Mobile:
+- Compact header.
+- Mobile-friendly navigation.
+- Stacked cards.
+- Full-width forms.
+- Bottom navigation or accessible mobile menu.
+- AI chat optimised for small screens.
+
+The entire application must work on mobile, tablet, and desktop.
+
+---
+
+# 7. APPLICATION LAYOUT AND NAVIGATION
+
+Create a common application layout.
+
+Suggested structure:
+
+```text
+CareGuide
+│
+├── Sidebar
+│   ├── Logo
+│   ├── Home
+│   ├── Discover Products
+│   ├── My Care
+│   ├── Routine Manager
+│   ├── Progress Journal
+│   ├── AI Assistant
+│   ├── Orders & Support
+│   └── Settings
+│
+├── Header
+│   ├── Page Title
+│   ├── Search
+│   ├── AI Assistant Shortcut
+│   └── Session/Profile Menu
+│
+└── Main Content
+```
+
+### Required routes
+
+```text
+/
+ /onboarding
+ /dashboard
+ /discover
+ /discover/:productId
+ /compare
+ /my-care
+ /routines
+ /progress
+ /ai-assistant
+ /orders
+ /support
+ /settings
+```
+
+Implement routing with React Router DOM.
+
+Use reusable layouts and route-level loading/error handling.
+
+The user should be able to navigate between all modules without losing their session.
+
+---
+
+# 8. PAGE 1: LANDING PAGE
+
+Route: `/`
+
+Build an elegant landing page introducing CareGuide.
+
+### Hero section
+
+Headline:
+
+"Your personal care journey, all in one place."
+
+Subheading:
+
+"Discover products, organise your routines, track your progress, and get personalised guidance with CareGuide."
+
+Primary CTA:
+"Get Started"
+
+Secondary CTA:
+"Explore Products"
+
+Include a visually appealing product/lifestyle composition on the right side.
+
+Use actual available product images or carefully selected non-misleading placeholder imagery.
+
+### Below the hero
+
+Create these sections:
+
+1. Discover Your Care
+   - Hair
+   - Beard
+   - Skin
+   - Wellness
+
+2. Everything in One Place
+   - Manage products.
+   - Organise routines.
+   - Track personal progress.
+   - Get AI assistance.
+
+3. Meet CareGuide AI
+   - Explain that users can ask product-related questions.
+   - CTA: Ask CareGuide AI.
+
+4. How It Works
+   - Discover.
+   - Organise.
+   - Track.
+   - Improve.
+
+5. Footer
+   - About CareGuide.
+   - Explore Products.
+   - Support.
+   - Disclaimer.
+
+CTA buttons must navigate to actual pages.
+
+---
+
+# 9. PAGE 2: ONBOARDING
+
+Route: `/onboarding`
+
+Build a simple multi-step onboarding flow.
+
+Do not make onboarding excessively long.
+
+### Step 1: Welcome
+
+Title:
+
+"Let's understand your care goals."
+
+Subtitle:
+
+"Tell us what you would like to manage. You can update this anytime."
+
+### Step 2: Select categories
+
+Allow multiple selections:
+
+- Hair Care
+- Beard Care
+- Skin Care
+- General Wellness
+- Other
+
+Use visually attractive selectable cards with icons.
+
+### Step 3: Select concerns
+
+Show options based on the categories selected.
+
+Examples:
+- Hair fall concerns.
+- Dandruff concerns.
+- Dry hair.
+- Beard maintenance.
+- Skin hydration.
+- General personal care.
+
+These are user-selected concerns, not medical diagnoses.
+
+### Step 4: Select goals
+
+Examples:
+- Organise my products.
+- Build a consistent routine.
+- Understand ingredients.
+- Track my progress.
+- Get answers to product questions.
+
+### Step 5: Complete
+
+Show a personalised welcome screen.
+
+Button:
+
+"Go to My Dashboard"
+
+### Important
+
+- Validate selections.
+- Allow users to go back.
+- Save onboarding information using PUT `/session/{sessionId}`.
+- Display progress indicators.
+- Handle API errors.
+- Allow skipping optional questions.
+
+---
+
+# 10. PAGE 3: PERSONAL DASHBOARD
+
+Route: `/dashboard`
+
+This is the main home screen after onboarding.
+
+Create a personalised dashboard with the following sections.
+
+### Welcome header
+
+Example:
+
+"Good morning!"
+
+"Welcome to your personal care space."
+
+The greeting can use the local time.
+
+### Dashboard cards
+
+1. My Active Products
+2. Today's Routine
+3. Completed Activities
+4. Progress Journal Entries
+
+Every number must come from actual backend data.
+
+Never hardcode fake statistics.
+
+### Today's Routine
+
+Show:
+- Activity name.
+- Related product.
+- Scheduled time or date if available.
+- Completion status.
+- Mark Complete button.
+- Skip button.
+
+### My Care Products
+
+Show a few recently added products.
+
+Each card should include:
+- Product image.
+- Product name.
+- Category.
+- Status.
+- View Details button.
+
+### AI Assistant preview
+
+Create a prominent section:
+
+"Have a question about your care routine?"
+
+Example prompts:
+- What does this ingredient do?
+- Help me understand my product instructions.
+- How can I organise my routine?
+- Compare two products.
+
+Button:
+
+"Chat with CareGuide AI"
+
+### Progress Journal preview
+
+Show the latest progress entries.
+
+### Quick actions
+
+- Explore Products.
+- Add Product.
+- Create Routine.
+- Add Progress Entry.
+- Ask AI.
+
+All dashboard data should be retrieved from `/dashboard?sessionId=...`.
+
+Use `/dashboard/analytics` for charts where appropriate.
+
+Include useful empty states when a new user has no records.
+
+---
+
+# 11. PAGE 4: DISCOVER PRODUCTS
+
+Route: `/discover`
+
+Create a full product discovery experience.
+
+### Header
+
+Title:
+
+"Discover Your Care"
+
+Subtitle:
+
+"Explore products and find information to help manage your personal care."
+
+### Category filters
+
+- All
+- Hair
+- Beard
+- Skin
+- Wellness
+
+### Search
+
+Search products by:
+- Product name.
+- Category.
+- Available description.
+
+Use debouncing.
+
+### Filters
+
+Provide:
+- Category.
+- Price range, only when real prices are available.
+- Product type.
+- Availability, only when supplied by the backend.
+
+### Sorting
+
+- Featured.
+- Name A-Z.
+- Price low to high.
+- Price high to low.
+
+Do not display unavailable sorting options if the relevant data does not exist.
+
+### Product cards
+
+Every product card should contain:
+
+- Product image.
+- Product name.
+- Category badge.
+- Short description.
+- Price, only if verified.
+- View Details.
+- Add to My Care.
+- Compare checkbox/button.
+
+Create a clean product grid.
+
+### Product data
+
+Use the backend catalogue.
+
+Initial representative products may include:
+
+Hair:
+- Stage 1 Anti-Hairfall Kit.
+- Advance Daily Use Anti-Dandruff Shampoo.
+- Biotin Hair Gummies.
+- Advanced Hair Serum.
+
+Beard:
+- Beardmax Growth Serum.
+- Beard Gummies.
+
+These are initial representative catalogue entries, not verified bestsellers.
+
+Do not invent ingredients, product claims, prices, or approved usage instructions.
+
+### Pagination
+
+Implement pagination using the backend's pagination response.
+
+If the backend returns page and limit, use them correctly.
+
+Avoid loading the entire catalogue unnecessarily.
+
+---
+
+# 12. PAGE 5: PRODUCT DETAILS
+
+Route: `/discover/:productId`
+
+Create a detailed product information page.
+
+### Layout
+
+Left:
+- Product image gallery.
+
+Right:
+- Product name.
+- Category.
+- Description.
+- Price, if available.
+- Add to My Care.
+- Compare Product.
+
+### Information sections
+
+1. Product Overview
+2. Description
+3. Ingredients
+4. Benefits
+5. Usage Instructions
+6. Precautions
+7. Frequently Asked Questions
+
+Only render sections for which the backend provides data.
+
+Never generate product facts in the frontend.
+
+### AI product assistance
+
+Include a section:
+
+"Have questions about this product?"
+
+Suggested questions:
+- What are the listed ingredients?
+- Explain the usage instructions.
+- What precautions are listed?
+- How is this product different from another product?
+
+Clicking a question should navigate to the AI assistant with the question prefilled or open the AI panel.
+
+### Add to My Care
+
+On click:
+- Call POST `/my-products`.
+- Include the current session ID.
+- Include the product ID.
+- Show success toast.
+- Update relevant queries.
+- Prevent accidental duplicate entries.
+
+---
+
+# 13. PAGE 6: PRODUCT COMPARISON
+
+Route: `/compare`
+
+Allow users to compare products.
+
+### Behaviour
+
+- Allow selecting up to three products.
+- Provide a comparison tray.
+- Allow removing products.
+- Provide a clear comparison button.
+
+### Comparison table
+
+Compare available fields:
+
+- Product name.
+- Category.
+- Description.
+- Ingredients.
+- Benefits.
+- Usage instructions.
+- Price, if available.
+- Precautions.
+
+Highlight differences in a readable way.
+
+Do not invent missing values.
+
+Show "Information not available" when data is absent.
+
+Add an AI shortcut:
+
+"Ask AI to explain the differences"
+
+This should send the comparison context to the backend AI endpoint, where available verified product information can be retrieved.
+
+---
+
+# 14. PAGE 7: MY CARE
+
+Route: `/my-care`
+
+This page allows users to manage the products they currently use.
+
+### Header
+
+Title:
+
+"My Care"
+
+Subtitle:
+
+"Keep all your personal care products organised."
+
+### Product status tabs
+
+- All
+- Active
+- Paused
+- Discontinued
+
+### Product card
+
+Display:
+- Product image.
+- Name.
+- Category.
+- Start date.
+- Current status.
+- Personal notes.
+
+### Actions
+
+- View Product.
+- Edit Notes.
+- Change Status.
+- Remove from My Care.
+
+### Add Product
+
+Button:
+
+"Add Product"
+
+Open a searchable product selection modal.
+
+Retrieve products from `/products`.
+
+### Empty state
+
+If the user has not added products:
+
+"You haven't added any products yet."
+
+CTA:
+
+"Explore Products"
+
+All changes must persist through backend endpoints.
+
+---
+
+# 15. PAGE 8: ROUTINE MANAGER
+
+Route: `/routines`
+
+Build a practical routine management module.
+
+### Header
+
+"Your Care Routine"
+
+Subtitle:
+
+"Organise your personal care activities in one place."
+
+### Views
+
+- Today.
+- Weekly.
+- All Activities.
+
+### Routine activity cards
+
+Each card should show:
+- Activity name.
+- Related product, if any.
+- Instructions.
+- Scheduled date.
+- Status.
+
+Statuses:
+- Pending.
+- Completed.
+- Skipped.
+
+### Create routine modal
+
+Fields:
+- Activity name.
+- Related product.
+- Instructions.
+- Scheduled date.
+- Optional notes.
+
+Use React Hook Form and Zod.
+
+### Actions
+
+- Create activity.
+- Edit activity.
+- Delete activity.
+- Mark completed.
+- Mark skipped.
+- Filter by date.
+- Filter by status.
+
+### Routine summary
+
+Show:
+- Total activities.
+- Completed activities.
+- Pending activities.
+- Skipped activities.
+
+All values must come from backend records.
+
+### Important product safety rule
+
+Do not invent a product dosage, frequency, or schedule.
+
+If product usage instructions are available, display them as supplied.
+
+Allow users to create their own organisational reminders, but clearly distinguish user-created reminders from manufacturer-approved instructions.
+
+Persist all changes through the routine API.
+
+---
+
+# 16. PAGE 9: PROGRESS JOURNAL
+
+Route: `/progress`
+
+Create a personal care journal.
+
+This should support multiple care categories, not just hair or beard.
+
+### Categories
+
+- Hair.
+- Beard.
+- Skin.
+- General Wellness.
+- Other.
+
+### Add Progress Entry
+
+Create a form with:
+
+1. Care category.
+2. Entry date.
+3. Personal condition or observation.
+4. Notes.
+5. Optional photo attachment.
+
+### Image upload
+
+Use Cloudinary through the FastAPI backend integration.
+
+The frontend should:
+- Request upload configuration/signature from the backend.
+- Upload the image securely using the returned configuration.
+- Receive the uploaded image URL and asset identifier.
+- Submit the journal entry to the backend.
+- Show upload progress.
+- Handle upload failure.
+- Allow removal of an attached image before saving.
+
+Do not expose Cloudinary API secrets.
+
+Do not make images public by default if they contain personal information.
+
+### Journal timeline
+
+Show:
+- Date.
+- Category.
+- Observation.
+- Notes.
+- Thumbnail.
+
+### Filters
+
+- Category.
+- Date range.
+
+### Actions
+
+- Add entry.
+- View details.
+- Edit.
+- Delete.
+
+### Progress visualisation
+
+Create simple charts only when enough actual records exist.
+
+Examples:
+- Entries over time.
+- Category distribution.
+- User-recorded progress trends.
+
+Never present these as medical measurements or proven product effectiveness.
+
+### Empty state
+
+"Your personal care journey starts here."
+
+CTA:
+
+"Add Your First Entry"
+
+---
+
+# 17. PAGE 10: CAREGUIDE AI ASSISTANT
+
+Route: `/ai-assistant`
+
+This is a major feature.
+
+Build a polished AI chat experience powered by **Google Gemini through the FastAPI backend**.
+
+The frontend must never call the Gemini API directly.
+
+The Gemini API key must never appear in:
+- React source code.
+- Frontend environment variables.
+- Browser network requests.
+- Local storage.
+- Client-side bundles.
+
+Only FastAPI communicates with Gemini.
+
+## AI assistant interface
+
+### Main layout
+
+Desktop:
+- Left conversation/history panel.
+- Central chat window.
+- Optional context panel.
+
+Mobile:
+- Full-width chat.
+- Collapsible history.
+- Fixed message composer.
+
+### Header
+
+Title:
+
+"CareGuide AI"
+
+Subtitle:
+
+"Your personal care information assistant."
+
+Show a subtle AI status indicator.
+
+Do not claim the AI is a doctor or medical professional.
+
+### Welcome screen
+
+Display:
+
+"How can I help with your care journey today?"
+
+Suggested prompts:
+
+1. Explain the ingredients in my product.
+2. Help me organise my care routine.
+3. Compare two Man Matters products.
+4. Explain the usage instructions of my product.
+5. Help me understand a product FAQ.
+6. How can I use CareGuide effectively?
+
+### Chat functionality
+
+The user should be able to:
+- Type a question.
+- Send using a button.
+- Send using Enter.
+- Use Shift + Enter for a new line.
+- See previous messages.
+- Start a new conversation.
+- Clear chat history with confirmation.
+- See timestamps.
+- Copy AI responses.
+- Retry failed requests.
+- See suggested follow-up questions when provided.
+
+### API request
+
+Use POST `/ai/chat`.
+
+Expected request structure:
+
+```json
+{
+  "sessionId": "demo-session-id",
+  "message": "What are the ingredients of this product?",
+  "context": {
+    "productId": "optional-product-id"
+  }
+}
+```
+
+Adapt to the exact backend schema.
+
+Expected response concept:
+
+```json
+{
+  "response": "AI-generated response",
+  "sources": [],
+  "suggestions": []
+}
+```
+
+Adapt to the actual backend response.
+
+### Chat history
+
+On opening the AI page:
+- Call GET `/ai/history?sessionId={sessionId}`.
+- Render previous messages.
+- Maintain chronological order.
+- Scroll to the latest message.
+- Do not duplicate messages when refreshing.
+
+### Sending a message
+
+When the user submits a question:
+
+1. Validate that the message is not empty.
+2. Display the user message immediately.
+3. Show an AI typing/loading indicator.
+4. Call POST `/ai/chat`.
+5. Display the returned answer.
+6. Display returned sources where available.
+7. Display suggested follow-up prompts.
+8. Handle network or AI errors.
+
+Use optimistic UI carefully. If the API call fails, mark the message as failed and allow retrying without silently losing it.
+
+### AI answer design
+
+Render:
+- Paragraphs.
+- Bullet points.
+- Numbered steps.
+- Bold text.
+- Tables when appropriate.
+
+Use a safe Markdown renderer.
+
+Do not allow unsafe HTML rendering.
+
+### Context awareness
+
+If the user opens AI from a product page:
+- Pass the product ID as context.
+- Show a small product context chip.
+- Allow removing the context.
+
+If the user opens AI from the comparison page:
+- Pass the selected product IDs if the backend supports it.
+
+If the user opens AI from My Care:
+- Offer relevant product context.
+
+### Safety and accuracy
+
+The frontend must display a short disclaimer:
+
+"CareGuide AI provides general product information and personal care assistance. It does not replace professional medical advice."
+
+Do not present AI responses as medical diagnoses.
+
+If the backend reports that verified product information is unavailable, display that answer normally. Do not replace it with invented frontend content.
+
+### AI states
+
+Design all of the following:
+
+- Initial welcome state.
+- Sending state.
+- AI typing state.
+- Successful response.
+- Network failure.
+- Backend unavailable.
+- Gemini unavailable.
+- Empty history.
+- Clear history confirmation.
+
+### Important
+
+The frontend is responsible for the chat experience only.
+
+The backend is responsible for:
+- Retrieving product data from MongoDB.
+- Retrieving relevant FAQs.
+- Building the Gemini prompt.
+- Calling Gemini.
+- Applying safety instructions.
+- Saving chat messages.
+- Returning the AI response.
+
+Do not duplicate AI business logic in React.
+
+---
+
+# 18. PAGE 11: ORDERS
+
+Route: `/orders`
+
+Create an order lookup interface.
+
+Important: This prototype does not have a real Man Matters order integration.
+
+The backend may contain clearly labelled sample orders.
+
+### UI
+
+Title:
+
+"My Orders"
+
+Subtitle:
+
+"View order information associated with your demo session."
+
+### Order lookup
+
+Provide an order ID input.
+
+Button:
+
+"Track Order"
+
+Call GET `/orders/{order_id}`.
+
+### Order details
+
+Display available information:
+- Order ID.
+- Order date.
+- Products.
+- Total amount.
+- Order status.
+- Estimated delivery, if provided.
+
+### Order status timeline
+
+Possible statuses:
+- Placed.
+- Confirmed.
+- Shipped.
+- Out for Delivery.
+- Delivered.
+- Cancelled.
+
+Only render the actual status received from the backend.
+
+Show a visible "Demo Order Data" label when `isDemo` is true.
+
+Do not imply that real Man Matters order systems are connected.
+
+---
+
+# 19. PAGE 12: CUSTOMER SUPPORT
+
+Route: `/support`
+
+Create a customer support centre.
+
+### Support landing section
+
+Title:
+
+"How can we help you?"
+
+Provide:
+- Frequently Asked Questions.
+- Product information.
+- Routine-related questions.
+- Order-related questions.
+- General support.
+
+### FAQ section
+
+Fetch FAQs from GET `/faqs`.
+
+Create:
+- Searchable FAQ list.
+- Category filters.
+- Accordion layout.
+
+### Support ticket form
+
+Fields:
+- Name.
+- Email.
+- Category.
+- Subject.
+- Message.
+
+Use React Hook Form and Zod.
+
+Call POST `/support/tickets`.
+
+### My Support Requests
+
+Call GET `/support/tickets?sessionId={sessionId}`.
+
+Display:
+- Ticket ID.
+- Subject.
+- Category.
+- Date.
+- Status.
+
+Show a success confirmation after submission.
+
+Do not claim that a ticket was sent if the backend request failed.
+
+---
+
+# 20. PAGE 13: SETTINGS
+
+Route: `/settings`
+
+Create a simple preferences page.
+
+Include:
+
+### Personal Care Preferences
+- Selected categories.
+- Selected concerns.
+- Selected goals.
+
+Allow editing and save through PUT `/session/{sessionId}`.
+
+### Appearance
+- Light theme.
+- Dark theme, if implemented consistently.
+
+### Session Management
+- Show demo session indicator.
+- Reset Demo button.
+- Confirmation dialog.
+
+Do not include authentication or account security settings.
+
+---
+
+# 21. REUSABLE COMPONENT ARCHITECTURE
+
+Build reusable components.
+
+Suggested structure:
+
+```text
+src/
+│
+├── assets/
+│
+├── components/
+│   ├── layout/
+│   │   ├── AppLayout.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── Header.tsx
+│   │   ├── MobileNavigation.tsx
+│   │   └── Footer.tsx
+│   │
+│   ├── common/
+│   │   ├── LoadingSpinner.tsx
+│   │   ├── PageLoader.tsx
+│   │   ├── ErrorState.tsx
+│   │   ├── EmptyState.tsx
+│   │   ├── ConfirmDialog.tsx
+│   │   ├── SearchInput.tsx
+│   │   ├── PageHeader.tsx
+│   │   └── StatusBadge.tsx
+│   │
+│   ├── products/
+│   │   ├── ProductCard.tsx
+│   │   ├── ProductGrid.tsx
+│   │   ├── ProductFilters.tsx
+│   │   ├── ProductSearch.tsx
+│   │   ├── ProductGallery.tsx
+│   │   └── CompareTray.tsx
+│   │
+│   ├── routines/
+│   │   ├── RoutineCard.tsx
+│   │   ├── RoutineForm.tsx
+│   │   └── RoutineSummary.tsx
+│   │
+│   ├── progress/
+│   │   ├── ProgressCard.tsx
+│   │   ├── ProgressForm.tsx
+│   │   ├── ProgressTimeline.tsx
+│   │   └── ImageUploader.tsx
+│   │
+│   ├── ai/
+│   │   ├── ChatWindow.tsx
+│   │   ├── ChatMessage.tsx
+│   │   ├── ChatInput.tsx
+│   │   ├── TypingIndicator.tsx
+│   │   ├── SuggestedPrompts.tsx
+│   │   ├── ChatHistory.tsx
+│   │   └── SourceReferences.tsx
+│   │
+│   ├── dashboard/
+│   │   ├── WelcomeSection.tsx
+│   │   ├── StatCard.tsx
+│   │   ├── TodayRoutine.tsx
+│   │   └── RecentProgress.tsx
+│   │
+│   └── ui/
+│
+├── pages/
+│   ├── LandingPage.tsx
+│   ├── OnboardingPage.tsx
+│   ├── DashboardPage.tsx
+│   ├── DiscoverPage.tsx
+│   ├── ProductDetailsPage.tsx
+│   ├── ComparePage.tsx
+│   ├── MyCarePage.tsx
+│   ├── RoutinesPage.tsx
+│   ├── ProgressPage.tsx
+│   ├── AIAssistantPage.tsx
+│   ├── OrdersPage.tsx
+│   ├── SupportPage.tsx
+│   └── SettingsPage.tsx
+│
+├── context/
+│   └── SessionContext.tsx
+│
+├── hooks/
+│   ├── useSession.ts
+│   ├── useProducts.ts
+│   ├── useRoutines.ts
+│   ├── useProgress.ts
+│   └── useAIChat.ts
+│
+├── services/
+│   ├── api.ts
+│   ├── sessionService.ts
+│   ├── productService.ts
+│   ├── myCareService.ts
+│   ├── routineService.ts
+│   ├── progressService.ts
+│   ├── aiService.ts
+│   ├── orderService.ts
+│   ├── supportService.ts
+│   ├── dashboardService.ts
+│   └── uploadService.ts
+│
+├── types/
+│   ├── session.ts
+│   ├── product.ts
+│   ├── routine.ts
+│   ├── progress.ts
+│   ├── ai.ts
+│   ├── order.ts
+│   └── support.ts
+│
+├── utils/
+│   ├── formatDate.ts
+│   ├── formatCurrency.ts
+│   └── errorHandler.ts
+│
+├── lib/
+│   └── utils.ts
+│
+├── App.tsx
+├── main.tsx
+└── index.css
+```
+
+You may improve this architecture, but maintain separation of concerns.
+
+---
+
+# 22. TYPESCRIPT AND DATA MODELS
+
+Create strongly typed interfaces for all backend entities.
+
+Examples:
+
+```typescript
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  imageUrl?: string;
+  price?: number;
+  ingredients: string[];
+  benefits: string[];
+  usageInstructions?: string;
+  precautions: string[];
+  isActive: boolean;
+}
+
+export interface CareSession {
+  sessionId: string;
+  selectedCategories: string[];
+  concerns: string[];
+  goals: string[];
+}
+
+export interface Routine {
+  id: string;
+  sessionId: string;
+  productId?: string;
+  activityName: string;
+  instructions?: string;
+  scheduledDate: string;
+  status: "pending" | "completed" | "skipped";
+}
+
+export interface ProgressEntry {
+  id: string;
+  sessionId: string;
+  careType: string;
+  entryDate: string;
+  condition?: string;
+  observations: string;
+  photoUrls: string[];
+}
+
+export interface ChatMessage {
+  id?: string;
+  role: "user" | "assistant";
+  message: string;
+  createdAt?: string;
+}
+```
+
+These are starting examples.
+
+Align every interface with the actual FastAPI Pydantic response schemas.
+
+Do not assume that MongoDB `_id` will always be returned as `id`. Confirm the backend serialization contract and implement a consistent frontend mapping if needed.
+
+---
+
+# 23. ERROR HANDLING AND USER EXPERIENCE
+
+Every API-connected page must handle:
+
+1. Initial loading.
+2. Empty data.
+3. Successful response.
+4. Network failure.
+5. Backend unavailable.
+6. Invalid input.
+7. Server validation error.
+8. Failed create/update/delete operations.
+
+Use:
+- Skeleton loaders.
+- Toast notifications.
+- Inline validation.
+- Retry buttons.
+- Confirmation dialogs.
+- Empty-state components.
+
+Do not show raw stack traces to users.
+
+Do not display fake success notifications.
+
+Use TanStack Query for caching and invalidation.
+
+After creating, updating, or deleting a record, invalidate the relevant queries.
+
+---
+
+# 24. PERFORMANCE AND CODE QUALITY
+
+Requirements:
+
+- Lazy-load page components.
+- Use reusable components.
+- Avoid unnecessary re-renders.
+- Debounce search.
+- Use pagination.
+- Optimise images.
+- Use semantic HTML.
+- Follow accessibility standards.
+- Add keyboard navigation.
+- Use proper button labels.
+- Maintain consistent naming.
+- Avoid giant single-file components.
+- Avoid duplicated API logic.
+- Avoid unnecessary global state.
+- Use React Query for server state.
+- Use React Context for session state.
+
+Do not put all application logic inside `App.tsx`.
+
+Do not use static JSON as a replacement for backend functionality.
+
+---
+
+# 25. ENVIRONMENT CONFIGURATION
+
+Create `.env.example`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+Do not put:
+- GEMINI_API_KEY
+- MONGODB_URI
+- CLOUDINARY_API_SECRET
+- Any backend secret
+
+inside the frontend environment.
+
+These belong exclusively to the backend.
+
+Add `.env` to `.gitignore`.
+
+---
+
+# 26. DEVELOPMENT AND EXECUTION
+
+The frontend must run independently.
+
+Expected development URL:
+
+`http://localhost:5173`
+
+Commands:
+
+```bash
+npm install
+npm run dev
+```
+
+Production build:
+
+```bash
+npm run build
+```
+
+Type checking:
+
+```bash
+npx tsc --noEmit
+```
+
+Fix all TypeScript errors before considering the frontend complete.
+
+---
+
+# 27. IMPLEMENTATION ORDER
+
+Do not attempt to generate the entire application in one enormous component.
+
+Build the application in the following phases.
+
+### Phase 1: Foundation
+- Create React Vite TypeScript project.
+- Configure Tailwind.
+- Configure shadcn/ui.
+- Install dependencies.
+- Create folder structure.
+- Create API client.
+- Create routing.
+- Create application layout.
+
+### Phase 2: Session and onboarding
+- Implement session ID creation.
+- Implement SessionContext.
+- Connect session APIs.
+- Build onboarding.
+
+### Phase 3: Product catalogue
+- Product discovery.
+- Search and filters.
+- Product details.
+- Comparison.
+- Add to My Care.
+
+### Phase 4: My Care
+- Product management.
+- Status changes.
+- Notes.
+- Empty states.
+
+### Phase 5: Routine Manager
+- Routine listing.
+- Create/edit/delete.
+- Completion tracking.
+- Routine summary.
+
+### Phase 6: Progress Journal
+- Entry forms.
+- Timeline.
+- Image upload.
+- Edit/delete.
+- Charts.
+
+### Phase 7: Gemini AI interface
+- AI chat UI.
+- API integration.
+- Chat history.
+- Suggested prompts.
+- Product context.
+- Error handling.
+- Markdown rendering.
+
+### Phase 8: Orders and support
+- Order lookup.
+- FAQ.
+- Support ticket form.
+- Ticket history.
+
+### Phase 9: Dashboard and settings
+- Backend-driven dashboard.
+- Analytics.
+- Personal preferences.
+- Reset demo.
+
+### Phase 10: Final testing
+- Test every route.
+- Test every button.
+- Test every form.
+- Test API integration.
+- Test refresh persistence.
+- Test mobile layout.
+- Test errors.
+- Fix all console errors.
+- Run production build.
+
+---
+
+# 28. STRICT DEVELOPMENT RULES
+
+These instructions are mandatory.
+
+1. Do not create a static-only frontend.
+2. Do not create buttons that do nothing.
+3. Do not hardcode dashboard statistics.
+4. Do not hardcode AI responses.
+5. Do not expose the Gemini API key.
+6. Do not connect React directly to MongoDB.
+7. Do not create login or registration.
+8. Do not invent Man Matters product information.
+9. Do not claim real order integration.
+10. Do not collect sensitive medical information.
+11. Do not make medical diagnoses.
+12. Do not create fake customer reviews.
+13. Do not claim that product outcomes are guaranteed.
+14. Do not use placeholder API calls without implementing the service layer.
+15. Do not ignore loading and error states.
+16. Do not leave major pages unfinished.
+17. Do not create one giant component for the whole application.
+18. Do not sacrifice functionality for visual appearance.
+
+If an endpoint is not yet available, isolate its integration and display a clear unavailable state. Never silently fake a successful operation.
+
+---
+
+# 29. FINAL ACCEPTANCE CRITERIA
+
+The frontend is complete only when all of these work:
+
+- [ ] Landing page and navigation.
+- [ ] Demo session creation.
+- [ ] Session persistence after refresh.
+- [ ] Onboarding and preference saving.
+- [ ] Product catalogue from FastAPI.
+- [ ] Product search and filters.
+- [ ] Product details.
+- [ ] Product comparison.
+- [ ] Add/remove products in My Care.
+- [ ] Change product status.
+- [ ] Create/edit/delete routines.
+- [ ] Mark routines complete or skipped.
+- [ ] Create/edit/delete progress entries.
+- [ ] Upload journal images through backend.
+- [ ] Gemini AI chat through FastAPI.
+- [ ] AI chat history.
+- [ ] AI loading and error states.
+- [ ] Product-context AI questions.
+- [ ] Order lookup with demo labelling.
+- [ ] FAQ search.
+- [ ] Support ticket submission.
+- [ ] Dashboard with real backend statistics.
+- [ ] Reset demo functionality.
+- [ ] Mobile responsiveness.
+- [ ] No dead buttons.
+- [ ] No TypeScript errors.
+- [ ] Successful production build.
+
+---
+
+# 30. FINAL INSTRUCTIONS TO THE IDE
+
+Before writing code:
+
+1. Inspect the existing repository.
+2. Identify existing files and dependencies.
+3. Do not overwrite working code unnecessarily.
+4. Create a clear implementation plan.
+5. Check whether the backend API is reachable.
+6. If backend endpoints are unavailable, proceed with typed API contracts and clearly visible error states.
+
+Then implement the frontend phase by phase.
+
+After each phase:
+- Explain which files were created.
+- Explain which features are complete.
+- Identify any backend endpoints required.
+- Run the relevant checks.
+- Fix errors before moving forward.
+
+Do not stop after generating the initial landing page.
+
+Do not simply tell me how to build the application. Build it.
+
+**The final deliverable must be a complete, responsive, functional CareGuide React frontend integrated with the separate FastAPI backend and its Gemini-powered AI assistant.**

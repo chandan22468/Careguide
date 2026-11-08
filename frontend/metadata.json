@@ -1,0 +1,6 @@
+{
+  "name": "CareGuide - Man Matters Care Companion",
+  "description": "Your personal care journey, all in one place. Discover products, organise routines, track progress, and get AI guidance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

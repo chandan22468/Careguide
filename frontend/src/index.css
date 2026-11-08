@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --primary: #0F2E24;
+    --primary-light: #E7F1EB;
+    --primary-hover: #0a2119;
+    --background: #F7F8F5;
+    --surface: #FFFFFF;
+    --surface-subtle: #F3F5F1;
+    --text: #131B17;
+    --muted: #6C7A72;
+    --border: #E2E7E2;
+    --border-subtle: #EEF2EE;
+    --success: #207D53;
+    --warning: #C98A24;
+    --danger: #C84642;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--background);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Editorial serif headline font */
+  .font-editorial {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  /* Tabular numbers for clean prices, stats, ratings */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D1D9D4;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A6B5AD;
+}
+
