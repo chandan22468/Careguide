@@ -123,33 +123,73 @@ async def provision_demo_account(database) -> None:
     logger.info("Shared demo account is ready for local development")
 
 
+_client: AsyncMongoClient | None = None
+_database = None
+_initialized: bool = False
+
+
+def get_mongo_client() -> AsyncMongoClient:
+    """Global lazy MongoDB client to reuse connection pool across serverless invocations."""
+    global _client
+    if _client is None:
+        _client = AsyncMongoClient(
+            settings.mongodb_uri,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+            maxPoolSize=10,
+            minPoolSize=1,
+        )
+    return _client
+
+
+def get_database(request: Request | None = None):
+    """Retrieve the database instance, lazily initializing if not already available."""
+    global _database
+    if request is not None:
+        app_db = getattr(getattr(request, "app", None), "state", None)
+        if app_db and getattr(app_db, "database", None) is not None:
+            return app_db.database
+
+    if _database is None:
+        client = get_mongo_client()
+        _database = client[settings.mongodb_database]
+    return _database
+
+
+async def init_db_once(database) -> None:
+    """Run index creation and catalogue seeding once, skipping heavy work in serverless prod."""
+    global _initialized
+    if _initialized:
+        return
+    _initialized = True
+
+    import os
+    is_prod = settings.environment.lower() in {"production", "prod"} or bool(os.environ.get("VERCEL"))
+    # In local dev or first setup, build indexes and seed data
+    if not is_prod:
+        try:
+            await create_indexes(database)
+            await seed_product_catalogue(database)
+            await provision_demo_account(database)
+        except Exception:
+            logger.exception("Initial database indexing/seeding encountered an error (continuing)")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    client = AsyncMongoClient(
-        settings.mongodb_uri,
-        serverSelectionTimeoutMS=5000,
-        connectTimeoutMS=5000,
-    )
+    client = get_mongo_client()
     try:
-        await client.admin.command("ping")
         database = client[settings.mongodb_database]
-        await create_indexes(database)
-        await seed_product_catalogue(database)
-        await provision_demo_account(database)
         app.state.mongo_client = client
         app.state.database = database
+        await init_db_once(database)
         logger.info("Connected to MongoDB database %s", settings.mongodb_database)
         yield
     except Exception:
-        await client.close()
-        logger.exception("Could not initialize MongoDB")
-        raise
+        logger.exception("Could not initialize MongoDB during startup")
+        yield
     finally:
-        await client.close()
-
-
-def get_database(request: Request):
-    database = getattr(request.app.state, "database", None)
-    if database is None:
-        raise RuntimeError("The database connection is not initialized")
-    return database
+        import os
+        # Do not close client connection in serverless (e.g. Vercel) so warm invocations reuse connections
+        if not os.environ.get("VERCEL") and _client is not None:
+            await client.close()

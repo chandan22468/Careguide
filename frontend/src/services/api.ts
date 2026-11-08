@@ -1,14 +1,18 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from "axios";
 import { BackendConfig, ConnectionStatus } from "../types/backend.ts";
 
-export const DEFAULT_BACKEND_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+export const DEFAULT_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 const STORAGE_KEY_BASE_URL = "careguide_backend_url";
 const STORAGE_KEY_MODE = "careguide_backend_mode"; // 'auto' | 'force_live' | 'force_demo'
 
 export function getStoredBackendUrl(): string {
-  return localStorage.getItem(STORAGE_KEY_BASE_URL) || DEFAULT_BACKEND_URL;
+  const stored = localStorage.getItem(STORAGE_KEY_BASE_URL);
+  if (stored && (stored.includes("localhost:8000") || stored.includes("127.0.0.1:8000") || stored === "/api/v1")) {
+    localStorage.removeItem(STORAGE_KEY_BASE_URL);
+    return DEFAULT_BACKEND_URL;
+  }
+  return stored || DEFAULT_BACKEND_URL;
 }
 
 export function setStoredBackendUrl(url: string): void {

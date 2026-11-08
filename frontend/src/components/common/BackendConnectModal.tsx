@@ -132,7 +132,7 @@ export const BackendConnectModal: React.FC = () => {
                 type="text"
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
-                placeholder="http://localhost:8000/api/v1"
+                placeholder="/api"
                 className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#E7EBE7] text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#183C32]/20 focus:border-[#183C32] bg-[#F8F9F6]"
               />
               <button
@@ -147,12 +147,12 @@ export const BackendConnectModal: React.FC = () => {
             </div>
             <div className="flex justify-between items-center mt-1.5">
               <span className="text-[11px] text-[#75817A]">
-                Default: <code className="font-mono">http://localhost:8000/api/v1</code>
+                Default: <code className="font-mono">/api</code>
               </span>
               <button
                 type="button"
                 onClick={() => {
-                  setInputUrl("http://localhost:8000/api/v1");
+                  setInputUrl("/api");
                   resetToDefaultUrl();
                 }}
                 className="text-[11px] text-[#183C32] hover:underline font-medium"

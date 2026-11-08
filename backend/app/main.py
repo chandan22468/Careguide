@@ -63,4 +63,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-app.include_router(router, prefix=settings.api_v1_prefix)
+# All routes are available under /api and /api/v1
+app.include_router(router, prefix="/api")
+app.include_router(router, prefix="/api/v1")

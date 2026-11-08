@@ -121,3 +121,34 @@ npm run build
 ```
 
 For backend setup details and API notes, see [backend/README.md](backend/README.md).
+
+## Deploy to Vercel
+
+The root `vercel.json` configures one Vercel project with the frontend and
+FastAPI backend as separate services. API requests under `/api/` are routed to
+FastAPI; all other paths are routed to the Vite frontend. In production, the
+frontend uses the same-domain `/api/v1` URL, so no frontend API URL setting is
+required.
+
+1. Push the repository to GitHub and import `chandan22468/Careguide` in Vercel.
+   Keep the project root set to `.` so Vercel can read the root `vercel.json`.
+2. Before deploying, add these environment variables in the Vercel project
+   settings for Production (and Preview if you use preview deployments):
+   - `MONGODB_URI`: a MongoDB Atlas connection string; a local MongoDB address
+     is not reachable by Vercel.
+   - `MONGODB_DATABASE`: the database name, for example `careguide`.
+   - `ENVIRONMENT`: `production`.
+   - `AUTH_JWT_SECRET`: a private random secret of at least 32 characters.
+   - `CORS_ORIGINS`: the exact deployed frontend origin, such as
+     `https://your-project.vercel.app`.
+   - `GEMINI_API_KEY` and `IMAGEKIT_PRIVATE_KEY` if you want to enable AI and
+     progress-photo uploads. `GEMINI_MODEL` is optional.
+3. Ensure your MongoDB Atlas network access policy allows Vercel's outbound
+   connections, or use a secure private network connection supported by your
+   plan. Do not expose a database to the entire internet unless you understand
+   and accept that risk.
+4. Deploy. The health endpoint is available at `/api/v1/health`.
+
+Add all credentials only through Vercel's environment-variable settings, never
+to GitHub, frontend `VITE_*` variables, or chat. Any API key previously pasted
+into chat should be revoked and replaced before deployment.

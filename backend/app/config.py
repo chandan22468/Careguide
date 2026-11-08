@@ -7,10 +7,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "CareGuide API"
     environment: str = "development"
-    api_v1_prefix: str = "/api/v1"
+    api_v1_prefix: str = "/api"
     mongodb_uri: str = "mongodb://localhost:27017"
     mongodb_database: str = "careguide"
-    cors_origins: str = "http://localhost:3000,http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.8-flash"
     ai_grounding_threshold: float = Field(default=0.34, ge=0.0, le=1.0)
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 10 * 1024 * 1024
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "../.env", "backend/.env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
