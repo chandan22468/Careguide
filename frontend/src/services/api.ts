@@ -1,7 +1,10 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from "axios";
 import { BackendConfig, ConnectionStatus } from "../types/backend.ts";
 
-export const DEFAULT_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+export const DEFAULT_BACKEND_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.BACKEND_URL ||
+  "/api";
 
 const STORAGE_KEY_BASE_URL = "careguide_backend_url";
 const STORAGE_KEY_MODE = "careguide_backend_mode"; // 'auto' | 'force_live' | 'force_demo'
